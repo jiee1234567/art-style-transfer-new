@@ -1588,18 +1588,17 @@
         }
 
         // 服务器URL配置
-           function getServerUrl() {
-       const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-       const isGitHubPages = window.location.hostname.includes('github.io');
-       const isFileProtocol = window.location.protocol === 'file:';
-       
-       if (isLocalhost || isFileProtocol) {
-           return 'http://localhost:5000'; // 本地开发环境
-       } else if (isGitHubPages) {
-           return 'https://9a09-218-249-50-48.ngrok.io'; // 替换为你的ngrok URL
-       }
-       return 'http://localhost:5000'; // 默认
-   }
+        function getServerUrl() {
+            const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            const isGitHubPages = window.location.hostname.includes('github.io');
+            const isFileProtocol = window.location.protocol === 'file:';
+            
+            if (isLocalhost || isFileProtocol) {
+                return 'http://localhost:5000'; // 本地开发环境
+            } else if (isGitHubPages) {
+                return 'http://10.61.190.5:5000'; // 使用你的实际IP地址
+            }
+            return 'http://localhost:5000'; // 默认
         }
 
         document.addEventListener('DOMContentLoaded', function() {
