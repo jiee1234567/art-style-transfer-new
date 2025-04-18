@@ -1,0 +1,275 @@
+/* 添加浏览器兼容性前缀 */
+.modal-content {
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px); /* Safari 9+ 支持 */
+}
+
+/* 表单元素可访问性改进 */
+input[type="file"] {
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    position: absolute;
+    overflow: hidden;
+    z-index: -1;
+}
+
+.file-input-label {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #4CAF50;
+    color: white;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+}
+
+.file-input-label:hover {
+    background-color: #45a049;
+}
+
+.file-input-label:focus {
+    outline: 2px solid #2196F3;
+    outline-offset: 2px;
+}
+
+/* 视频兼容性 */
+video {
+    width: 100%;
+    height: auto;
+}
+
+/* Firefox 兼容性 */
+@-moz-document url-prefix() {
+    video {
+        /* Firefox 特定的样式 */
+        object-fit: contain;
+    }
+}
+
+/* Safari 兼容性 */
+@media not all and (min-resolution:.001dpcm) {
+    @supports (-webkit-appearance:none) {
+        .modal-content {
+            /* Safari 特定的样式 */
+            background-color: rgba(255, 255, 255, 0.8);
+        }
+    }
+}
+
+/* 可访问性改进 */
+.style-option {
+    position: relative;
+}
+
+.style-option[aria-label] {
+    cursor: pointer;
+}
+
+.style-option[aria-label]:hover::after {
+    content: attr(aria-label);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 5px 10px;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    border-radius: 4px;
+    font-size: 14px;
+    white-space: nowrap;
+    z-index: 1000;
+}
+
+/* 加载状态指示器 */
+.loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 弹窗层级控制 */
+.preview-modal, .postcard-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+}
+
+.preview-modal {
+    z-index: 1000;
+}
+
+.postcard-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+.postcard-modal.active {
+    display: flex;
+}
+
+.postcard-content {
+    position: relative;
+    width: 90%;
+    max-width: 1200px;
+    max-height: 90vh;
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.postcard-canvas-container {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #f5f5f5;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+#postcardCanvas {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.image-controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+}
+
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.image-control-label {
+    font-size: 14px;
+    color: #333;
+    font-weight: 500;
+}
+
+.image-control-slider {
+    width: 100%;
+    height: 6px;
+    background: #ddd;
+    border-radius: 3px;
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.image-control-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    background: #4a90e2;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.image-control-slider::-webkit-slider-thumb:hover {
+    background: #357abd;
+}
+
+.postcard-controls {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
+
+.postcard-button {
+    padding: 8px 20px;
+    background-color: #4a90e2;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s;
+}
+
+.postcard-button:hover {
+    background-color: #357abd;
+}
+
+.close-preview {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    color: #666;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 5px;
+    line-height: 1;
+    transition: color 0.2s;
+}
+
+.close-preview:hover {
+    color: #333;
+}
+
+/* 加载动画 */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 3000;
+} 

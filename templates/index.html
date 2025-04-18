@@ -1,0 +1,371 @@
+<!-- 修改文件输入框，添加可访问性支持 -->
+<label for="imageInput" class="file-input-label" tabindex="0" role="button" aria-label="选择图片">
+    选择图片
+    <input type="file" id="imageInput" accept="image/jpeg,image/png" aria-label="选择要处理的图片">
+</label>
+
+<!-- 添加加载动画 -->
+<div class="loading-overlay">
+    <div class="loading-spinner"></div>
+</div>
+
+<!-- 添加调试面板 -->
+<div id="debug-panel" style="display: none; position: fixed; bottom: 0; right: 0; background: rgba(0,0,0,0.7); color: white; padding: 10px; max-height: 200px; overflow: auto; z-index: 9999;">
+    <div id="debug-log"></div>
+</div>
+
+<!-- 修改预览模态框 -->
+<div class="preview-modal" role="dialog" aria-label="图片预览">
+    <div class="preview-image-container">
+        <button class="close-preview" aria-label="关闭预览">&times;</button>
+        <img alt="生成的图片" role="img">
+    </div>
+</div>
+
+<!-- 修改明信片模态框 -->
+<div class="postcard-modal" role="dialog" aria-label="明信片预览">
+    <div class="postcard-content">
+        <div class="postcard-canvas-container">
+            <canvas id="postcardCanvas"></canvas>
+        </div>
+        <div class="image-controls">
+            <div class="control-group">
+                <label for="postcard-scale-control" class="image-control-label">缩放</label>
+                <input type="range" class="image-control-slider" id="postcard-scale-control" min="50" max="200" value="100">
+            </div>
+            <div class="control-group">
+                <label for="postcard-x-control" class="image-control-label">水平位置</label>
+                <input type="range" class="image-control-slider" id="postcard-x-control" min="0" max="100" value="50">
+            </div>
+            <div class="control-group">
+                <label for="postcard-y-control" class="image-control-label">垂直位置</label>
+                <input type="range" class="image-control-slider" id="postcard-y-control" min="0" max="100" value="50">
+            </div>
+        </div>
+        <div class="postcard-controls">
+            <button class="postcard-button" onclick="refreshTemplate()">换个模板</button>
+            <button class="postcard-button" onclick="downloadPostcard()">下载</button>
+            <button class="postcard-button" onclick="debugTemplates()">测试模板</button>
+        </div>
+        <button class="close-preview" onclick="closePostcardModal()" aria-label="关闭预览">&times;</button>
+    </div>
+</div>
+
+<!-- 添加关闭预览的函数和明信片相关函数 -->
+<script>
+    // 调试函数
+    function debug(message) {
+        console.log(message);
+        const debugPanel = document.getElementById('debug-panel');
+        const debugLog = document.getElementById('debug-log');
+        
+        if (debugPanel && debugLog) {
+            debugPanel.style.display = 'block';
+            const logEntry = document.createElement('div');
+            logEntry.textContent = message;
+            debugLog.appendChild(logEntry);
+            
+            // 自动滚动到底部
+            debugPanel.scrollTop = debugPanel.scrollHeight;
+        }
+    }
+    
+    // 测试所有模板加载
+    async function debugTemplates() {
+        debug("开始测试所有模板加载...");
+        debug(`模板总数: ${templateCount}`);
+        
+        for (let i = 1; i <= templateCount; i++) {
+            try {
+                debug(`测试模板 ${i}...`);
+                const template = await loadTemplate(i);
+                debug(`成功加载模板 ${i}, 尺寸: ${template.width}x${template.height}`);
+            } catch (error) {
+                debug(`加载模板 ${i} 失败: ${error.message || error}`);
+            }
+        }
+        
+        debug("模板测试完成");
+    }
+    
+    // 全局变量
+    let currentTemplate = null;
+    let currentTemplateIndex = 1;
+    const templateCount = 13;  // 更新模板总数
+    let imageScale = 1;
+    let imageX = 0.5;
+    let imageY = 0.5;
+    
+    // 加载模板图片
+    async function loadTemplate(index) {
+        return new Promise((resolve, reject) => {
+            debug(`尝试加载模板: ${index}`);
+            
+            // 针对本地文件系统访问的特殊处理
+            if (window.location.protocol === 'file:') {
+                debug('检测到本地文件系统访问，使用内联图片方案');
+                
+                // 创建一个内联的空白图片作为模板
+                const img = new Image();
+                img.onload = () => {
+                    debug(`模板 ${index} 使用内联方案加载成功`);
+                    resolve(img);
+                };
+                
+                // 使用简单的空白图片数据URL替代
+                // 为避免CORS问题，这里不尝试加载外部图片
+                img.src = 'data:image/png;base64,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';
+            } else {
+                // 对于HTTP服务器访问，使用常规方式加载
+                const img = new Image();
+                
+                // 设置跨域属性
+                img.crossOrigin = "anonymous";
+                
+                img.onload = () => {
+                    debug(`模板 ${index} 加载成功`);
+                    resolve(img);
+                };
+                
+                img.onerror = (error) => {
+                    debug(`模板 ${index} 加载失败: ${error}`);
+                    // 记录更多有用的调试信息
+                    debug(`加载失败的URL: ${img.src}`);
+                    
+                    reject(new Error(`Failed to load template ${index}`));
+                };
+                
+                // 使用相对于当前网页的URL
+                const cacheBuster = Date.now();
+                const basePath = window.location.protocol + '//' + window.location.host + '/';
+                
+                // 构建模板URL
+                img.src = `${basePath}templates/${index}.png?t=${cacheBuster}`;
+                debug(`模板请求URL: ${img.src}`);
+            }
+        });
+    }
+
+    // 重绘明信片
+    async function redrawPostcard() {
+        debug('重绘明信片...');
+        const canvas = document.getElementById('postcardCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // 确保画布尺寸正确
+        if (currentTemplate) {
+            canvas.width = currentTemplate.width;
+            canvas.height = currentTemplate.height;
+            debug(`画布尺寸: ${canvas.width} x ${canvas.height}`);
+        } else {
+            debug('警告: 没有当前模板，无法设置画布尺寸');
+        }
+
+        // 清空画布
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // 绘制生成的图片
+        const generatedImage = document.getElementById('generated-image');
+        if (generatedImage && generatedImage.complete && generatedImage.src) {
+            // 获取图片原始尺寸
+            const imgWidth = generatedImage.naturalWidth;
+            const imgHeight = generatedImage.naturalHeight;
+            
+            // 计算基础缩放比例以适应画布
+            const baseScale = Math.min(canvas.width / imgWidth, canvas.height / imgHeight);
+            
+            // 应用用户定义的缩放
+            const finalScale = baseScale * imageScale;
+            
+            // 计算缩放后的尺寸
+            const scaledWidth = imgWidth * finalScale;
+            const scaledHeight = imgHeight * finalScale;
+            
+            // 计算可移动的范围
+            const maxX = canvas.width - scaledWidth;
+            const maxY = canvas.height - scaledHeight;
+            
+            // 应用位置控制（确保图片不会完全移出画布）
+            const x = Math.min(Math.max(0, maxX * imageX), maxX);
+            const y = Math.min(Math.max(0, maxY * imageY), maxY);
+
+            debug(`绘制图片: ${scaledWidth}x${scaledHeight} 位置: ${x},${y}`);
+
+            // 先绘制图片
+            ctx.drawImage(generatedImage, x, y, scaledWidth, scaledHeight);
+        } else {
+            debug('警告: 没有有效的生成图片或图片尚未加载完成');
+        }
+
+        // 在图片上层绘制模板
+        if (currentTemplate) {
+            debug('绘制模板...');
+            ctx.drawImage(currentTemplate, 0, 0, canvas.width, canvas.height);
+            debug('模板绘制完成');
+        } else {
+            debug('警告: 没有当前模板，无法绘制');
+        }
+        
+        debug('明信片重绘完成');
+    }
+
+    // 随机选择并加载新模板
+    async function refreshTemplate() {
+        try {
+            debug('刷新模板...');
+            // 确保选择一个不同的模板
+            let newIndex;
+            let attempts = 0;
+            const maxAttempts = templateCount * 2;
+            
+            do {
+                newIndex = Math.floor(Math.random() * templateCount) + 1;
+                attempts++;
+                if (attempts > maxAttempts) {
+                    debug('达到最大尝试次数，使用当前索引');
+                    break;
+                }
+            } while (newIndex === currentTemplateIndex && templateCount > 1);
+            
+            debug(`选择新模板: ${newIndex}`);
+            currentTemplateIndex = newIndex;
+            
+            // 显示加载指示器
+            const loadingOverlay = document.querySelector('.loading-overlay');
+            if (loadingOverlay) loadingOverlay.style.display = 'flex';
+            
+            try {
+                debug(`开始加载模板 ${newIndex}...`);
+                currentTemplate = await loadTemplate(currentTemplateIndex);
+                debug(`模板 ${newIndex} 加载成功`);
+            } catch (error) {
+                debug(`模板 ${newIndex} 加载失败: ${error.message || error}`);
+                // 如果加载失败，尝试加载默认模板
+                if (newIndex !== 1) {
+                    debug('尝试加载默认模板(1)...');
+                    currentTemplateIndex = 1;
+                    currentTemplate = await loadTemplate(1);
+                }
+            } finally {
+                // 隐藏加载指示器
+                if (loadingOverlay) loadingOverlay.style.display = 'none';
+            }
+            
+            // 重新绘制明信片
+            await redrawPostcard();
+            
+        } catch (error) {
+            debug(`刷新模板错误: ${error.message || error}`);
+            alert('模板加载失败，请重试');
+        }
+    }
+
+    // 显示明信片模态框
+    function showPostcardModal() {
+        document.querySelector('.postcard-modal').classList.add('active');
+        debug('显示明信片模态框');
+    }
+    
+    // 关闭明信片模态框
+    function closePostcardModal() {
+        document.querySelector('.postcard-modal').classList.remove('active');
+        debug('关闭明信片模态框');
+    }
+    
+    // 生成明信片
+    async function generatePostcard() {
+        try {
+            debug('开始生成明信片...');
+            showPostcardModal();
+            await refreshTemplate();
+            debug('明信片生成完成');
+        } catch (error) {
+            debug(`生成明信片错误: ${error.message || error}`);
+            alert('生成明信片失败，请重试');
+        }
+    }
+
+    // 初始化控制器
+    function initializeControls() {
+        debug('初始化控制器...');
+        const scaleControl = document.getElementById('postcard-scale-control');
+        const xControl = document.getElementById('postcard-x-control');
+        const yControl = document.getElementById('postcard-y-control');
+        
+        if (scaleControl && xControl && yControl) {
+            scaleControl.value = 100;
+            xControl.value = 50;
+            yControl.value = 50;
+            
+            scaleControl.addEventListener('input', (e) => {
+                imageScale = e.target.value / 100;
+                redrawPostcard();
+            });
+            
+            xControl.addEventListener('input', (e) => {
+                imageX = e.target.value / 100;
+                redrawPostcard();
+            });
+            
+            yControl.addEventListener('input', (e) => {
+                imageY = e.target.value / 100;
+                redrawPostcard();
+            });
+            debug('控制器初始化完成');
+        } else {
+            debug('警告: 找不到控制器元素');
+        }
+    }
+
+    // 下载明信片
+    function downloadPostcard() {
+        debug('准备下载明信片...');
+        try {
+            const canvas = document.getElementById('postcardCanvas');
+            const link = document.createElement('a');
+            link.download = `艺境明信片_${currentTemplateIndex}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            debug('明信片下载请求已发送');
+        } catch (error) {
+            debug(`下载明信片错误: ${error.message || error}`);
+            alert('下载失败，请重试');
+        }
+    }
+
+    // 页面加载完成后初始化
+    document.addEventListener('DOMContentLoaded', () => {
+        debug('页面加载完成，开始初始化...');
+        initializeControls();
+        
+        debug(`准备预加载 ${templateCount} 个模板...`);
+        // 预加载所有模板
+        Promise.all(
+            Array.from({length: templateCount}, (_, i) => {
+                const index = i + 1;
+                debug(`预加载模板 ${index}...`);
+                return loadTemplate(index)
+                    .then(template => {
+                        debug(`模板 ${index} 预加载成功`);
+                        return template;
+                    })
+                    .catch(error => {
+                        debug(`模板 ${index} 预加载失败: ${error.message || error}`);
+                        return null; // 返回null而不是中断整个过程
+                    });
+            })
+        )
+        .then(templates => {
+            const loadedCount = templates.filter(t => t !== null).length;
+            debug(`预加载完成: ${loadedCount}/${templateCount} 个模板加载成功`);
+        })
+        .catch(error => {
+            debug(`预加载模板错误: ${error.message || error}`);
+        });
+    });
+</script>
+
+<!-- 删除这一行 -->
+<!-- <script src="/templates/postcard.js"></script> -->
+</body>
+</html> 
