@@ -1664,13 +1664,13 @@
     
     if (isLocalhost || isFileProtocol) {
         console.log('使用本地服务器');
-        return 'http://10.61.190.5:5000';
+        return 'http://localhost:5000';
     } else if (isGitHubPages) {
         console.log('使用ngrok服务器');
         return 'https://9b0b-218-241-131-160.ngrok-free.app'; // 使用ngrok的HTTPS URL
     }
     console.log('使用默认服务器');
-    return 'http://10.61.190.5:5000';
+    return 'http://localhost:5000';
 }
 
         document.addEventListener('DOMContentLoaded', function() {
